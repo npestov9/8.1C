@@ -7,6 +7,12 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
+
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserFactory;
+
+import java.io.StringReader;
+
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -40,7 +46,6 @@ public class ChatActivity extends AppCompatActivity {
         final String xml = "<chat application='8332384265189409422' instance='165'><message>" + userMessage + "</message></chat>";
         final MediaType MEDIA_TYPE_XML = MediaType.parse("application/xml; charset=utf-8");
 
-        // Creating a new thread to handle network operations
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -53,17 +58,41 @@ public class ChatActivity extends AppCompatActivity {
 
                 try {
                     Response response = client.newCall(request).execute();
-                    final String responseData = response.body().string();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            responseText.setText(responseData);
-                        }
-                    });
+                    if (response.isSuccessful() && response.body() != null) {
+                        String responseData = response.body().string();
+                        String extractedMessage = parseXML(responseData);
+                        runOnUiThread(() -> responseText.setText(extractedMessage));
+                    } else {
+                        runOnUiThread(() -> responseText.setText("Error: " + response.code()));
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
+                    runOnUiThread(() -> responseText.setText("Failed to connect: " + e.getMessage()));
                 }
             }
         }).start();
     }
+
+    private String parseXML(String xmlData) {
+        try {
+            XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+            XmlPullParser parser = factory.newPullParser();
+
+            parser.setInput(new StringReader(xmlData));
+            int eventType = parser.getEventType();
+            while (eventType != XmlPullParser.END_DOCUMENT) {
+                if (eventType == XmlPullParser.START_TAG && "message".equals(parser.getName())) {
+                    if (parser.next() == XmlPullParser.TEXT) {
+                        return parser.getText();  // Return the text inside <message>
+                    }
+                }
+                eventType = parser.next();
+            }
+        } catch (Exception e) {
+            Log.e("ChatActivity", "Error parsing XML", e);
+            return "Error parsing response";
+        }
+        return "No message found";
+    }
+
 }
