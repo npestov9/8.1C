@@ -1,9 +1,9 @@
 package com.example.a81c.requests;
 
 public class ChatbotResponse {
-    private String text;
+    private String reply;
 
-    public String getText() {
-        return text;
+    public String getReply() {
+        return reply;
     }
 }

@@ -1,3 +1,8 @@
+package com.example.a81c;
+
+import com.example.a81c.requests.ChatbotRequest;
+import com.example.a81c.requests.ChatbotResponse;
+
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.Headers;

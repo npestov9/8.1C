@@ -1,11 +1,9 @@
 package com.example.a81c.requests;
 
 public class ChatbotRequest {
-    private final ChatMessage[] history;
-    private final GenerationConfig config;
+    private final String message;
 
-    public ChatbotRequest(ChatMessage[] history, GenerationConfig config) {
-        this.history = history;
-        this.config = config;
+    public ChatbotRequest(String message) {
+        this.message = message;
     }
 }
