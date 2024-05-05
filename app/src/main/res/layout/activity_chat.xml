@@ -11,20 +11,23 @@
         android:layout_height="wrap_content"
         android:layout_above="@+id/messageEditText"/>
 
+
     <EditText
         android:id="@+id/messageEditText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:hint="Enter message"
-        android:inputType="text"/>
+        android:hint="Type your message here"/>
 
     <Button
         android:id="@+id/sendButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"
         android:text="Send"/>
+
+    <TextView
+        android:id="@+id/responseText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
 
 </RelativeLayout>

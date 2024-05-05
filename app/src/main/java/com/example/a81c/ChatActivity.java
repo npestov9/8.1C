@@ -3,100 +3,67 @@ package com.example.a81c;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ListView;
+import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
-
-import com.example.a81c.requests.ChatbotRequest;
-import com.example.a81c.requests.ChatbotResponse;
-
-import java.io.IOException;
-import java.util.ArrayList;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class ChatActivity extends AppCompatActivity {
 
-    private ListView messageListView;
     private EditText messageEditText;
     private Button sendButton;
-    private ArrayAdapter<String> messageAdapter;
-    private ArrayList<String> messages;
-    private ChatbotService chatbotService;
+    private TextView responseText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
 
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://api-url.com/") // Replace with your actual API URL
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-        chatbotService = retrofit.create(ChatbotService.class);
-
-        messageListView = findViewById(R.id.messageListView);
         messageEditText = findViewById(R.id.messageEditText);
         sendButton = findViewById(R.id.sendButton);
-
-        messages = new ArrayList<>();
-        messageAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, messages);
-        messageListView.setAdapter(messageAdapter);
+        responseText = findViewById(R.id.responseText);
 
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String message = messageEditText.getText().toString();
-                if (!message.isEmpty()) {
-                    sendMessage(message);
-                    messageEditText.setText(""); // Clear the input box after sending
-                }
+                sendMessage(messageEditText.getText().toString());
             }
         });
     }
 
-    private void sendMessage(String message) {
-        ChatbotRequest request = new ChatbotRequest(message);
+    private void sendMessage(String userMessage) {
+        final String xml = "<chat application='8332384265189409422' instance='165'><message>" + userMessage + "</message></chat>";
+        final MediaType MEDIA_TYPE_XML = MediaType.parse("application/xml; charset=utf-8");
 
-        chatbotService.sendMessage(request).enqueue(new Callback<ChatbotResponse>() {
+        // Creating a new thread to handle network operations
+        new Thread(new Runnable() {
             @Override
-            public void onResponse(Call<ChatbotResponse> call, Response<ChatbotResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    // Update the UI with the response from the server
-                    String reply = response.body().getReply();
-                    messages.add("Bot: " + reply);
-                    messageAdapter.notifyDataSetChanged();
-                } else {
-                    // Handle cases where the response is not successful
-                    messages.add("Bot: Error - " + response.code() + " " + response.message());
-                    messageAdapter.notifyDataSetChanged();
-                    if (response.errorBody() != null) {
-                        try {
-                            // Log the error body to understand more about the error
-                            Log.e("ChatActivity", "Error response body: " + response.errorBody().string());
-                        } catch (IOException e) {
-                            Log.e("ChatActivity", "Error parsing error body", e);
+            public void run() {
+                OkHttpClient client = new OkHttpClient();
+                RequestBody body = RequestBody.create(xml, MEDIA_TYPE_XML);
+                Request request = new Request.Builder()
+                        .url("https://www.botlibre.com/rest/api/chat")
+                        .post(body)
+                        .build();
+
+                try {
+                    Response response = client.newCall(request).execute();
+                    final String responseData = response.body().string();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            responseText.setText(responseData);
                         }
-                    }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
-
-            @Override
-            public void onFailure(Call<ChatbotResponse> call, Throwable t) {
-                // Handle failure such as no internet or server down
-                messages.add("Bot: Failed to connect - " + t.getMessage());
-                messageAdapter.notifyDataSetChanged();
-                Log.e("ChatActivity", "Network call failed", t);
-            }
-        });
+        }).start();
     }
-
-
 }
-
